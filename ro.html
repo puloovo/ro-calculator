@@ -1,0 +1,648 @@
+<!DOCTYPE html>
+<html lang="zh-TW" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>RO 仙境傳說 ATK & 技能傷害計算器</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        ro: {
+                            blue: '#3b82f6',
+                            gold: '#f59e0b',
+                            dark: '#0f172a',
+                            card: '#1e293b',
+                            accent: '#6366f1'
+                        }
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        body {
+            font-family: 'Inter', system-ui, -apple-system, sans-serif;
+        }
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0f172a;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #475569;
+        }
+    </style>
+</head>
+<body class="bg-slate-950 text-slate-100 min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+    <!-- Header -->
+    <header class="bg-slate-900/80 backdrop-blur border-b border-slate-800 sticky top-0 z-30 px-4 py-3">
+        <div class="max-w-7xl mx-auto flex flex-wrap items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <div class="p-2 bg-indigo-600/20 text-indigo-400 rounded-xl border border-indigo-500/30">
+                    <i class="fa-solid me-1 fa-calculator text-2xl"></i>
+                </div>
+                <div>
+                    <h1 class="text-xl font-bold bg-gradient-to-r from-indigo-400 to-amber-300 bg-clip-text text-transparent">
+                        RO 傷害計算器
+                    </h1>
+                    <p class="text-xs text-slate-400">仙境傳說 ATK & 技能最終傷害推算工具</p>
+                </div>
+            </div>
+
+            <div class="flex items-center gap-2 flex-wrap">
+                <!-- Preset Actions -->
+                <button onclick="savePreset()" class="px-3 py-1.5 bg-indigo-600 hover:bg-indigo-500 text-white rounded-lg text-sm font-medium transition flex items-center gap-1.5 shadow-lg shadow-indigo-600/20">
+                    <i class="fa-solid fa-bookmark"></i> 儲存預設
+                </button>
+                <select id="presetSelect" onchange="loadPreset(this.value)" class="bg-slate-800 border border-slate-700 text-slate-200 text-sm rounded-lg px-3 py-1.5 focus:ring-2 focus:ring-indigo-500 outline-none">
+                    <option value="">-- 載入已存組態 --</option>
+                </select>
+                <button onclick="exportJSON()" title="匯出 JSON" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-sm transition">
+                    <i class="fa-solid fa-download"></i>
+                </button>
+                <button onclick="importJSON()" title="匯入 JSON" class="p-2 bg-slate-800 hover:bg-slate-700 border border-slate-700 text-slate-300 rounded-lg text-sm transition">
+                    <i class="fa-solid fa-upload"></i>
+                </button>
+                <button onclick="resetFields()" title="重置全部" class="p-2 bg-rose-950/40 hover:bg-rose-900/50 border border-rose-800/50 text-rose-300 rounded-lg text-sm transition">
+                    <i class="fa-solid fa-rotate-left"></i>
+                </button>
+                <button onclick="openGithubModal()" class="px-3 py-1.5 bg-emerald-600/20 hover:bg-emerald-600/30 border border-emerald-500/40 text-emerald-300 rounded-lg text-sm font-medium transition flex items-center gap-1.5">
+                    <i class="fa-brands fa-github"></i> 上傳 GitHub
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-4 py-6 flex-1 grid grid-cols-1 lg:grid-cols-12 gap-6 w-full">
+
+        <!-- Input Forms (Left Column 8-Cols) -->
+        <div class="lg:col-span-8 space-y-6">
+
+            <!-- 1. 基礎屬性 -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-user-ninja text-amber-400"></i>
+                    <h2 class="font-bold text-slate-200">1. 角色基礎屬性 (Base & Stats)</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">Base Lv</label>
+                        <input type="number" id="baseLv" value="200" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">STR</label>
+                        <input type="number" id="str" value="120" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">DEX</label>
+                        <input type="number" id="dex" value="100" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">LUK</label>
+                        <input type="number" id="luk" value="90" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">POW</label>
+                        <input type="number" id="pow" value="100" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">PATK</label>
+                        <input type="number" id="patk" value="30" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 2. 武器與裝備數值 -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-hand-fist text-sky-400"></i>
+                    <h2 class="font-bold text-slate-200">2. 武器與卡裝 (Weapon & Equipment)</h2>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">武器基礎 ATK</label>
+                        <input type="number" id="weaponBaseAtk" value="250" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">精煉 ATK</label>
+                        <input type="number" id="refineAtk" value="120" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">卡片與裝備總 ATK</label>
+                        <input type="number" id="equipAtk" value="300" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 3. 後段增傷與乘術 (Multipliers %) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-chart-line text-emerald-400"></i>
+                    <h2 class="font-bold text-slate-200">3. 後段增傷乘數 (%)</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">對屬性 %</label>
+                        <input type="number" id="elementMod" value="20" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">對種族 %</label>
+                        <input type="number" id="raceMod" value="20" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">對階級 %</label>
+                        <input type="number" id="classMod" value="15" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">對體型 %</label>
+                        <input type="number" id="sizeMod" value="15" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">屬性攻擊增傷 %</label>
+                        <input type="number" id="elementAtkMod" value="10" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">致命塗毒 (EDP) %</label>
+                        <input type="number" id="edpMod" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">ATK 增加 %</label>
+                        <input type="number" id="atkPercent" value="25" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">PATK 增加 %</label>
+                        <input type="number" id="patkInc" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">遠距離傷害 %</label>
+                        <input type="number" id="rangedMod" value="30" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">暴擊傷害 %</label>
+                        <input type="number" id="critMod" value="40" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 4. 技能與 CRATE 參數 -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-wand-magic-sparkles text-purple-400"></i>
+                    <h2 class="font-bold text-slate-200">4. 技能倍率與 CRATE 設定</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">技能倍率 %</label>
+                        <input type="number" id="skillRatio" value="1500" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">特定技能增傷 %</label>
+                        <input type="number" id="specSkillMod" value="20" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">全技能增傷 %</label>
+                        <input type="number" id="allSkillMod" value="10" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">技能平衡 %</label>
+                        <input type="number" id="skillBalance" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">物理範圍增傷 %</label>
+                        <input type="number" id="physRangeMod" value="15" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">CRATE 數值</label>
+                        <input type="number" id="crate" value="20" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">CRATE 增加 %</label>
+                        <input type="number" id="crateInc" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 5. 最終傷害獨立乘數 (Final Damage Multipliers) -->
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-xl">
+                <div class="flex items-center gap-2 mb-4 border-b border-slate-800 pb-3">
+                    <i class="fa-solid fa-skull text-rose-400"></i>
+                    <h2 class="font-bold text-slate-200">5. 最終傷害獨立乘數 (Final Multipliers %)</h2>
+                </div>
+                <div class="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-3 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">背刺終傷 %</label>
+                        <input type="number" id="backstabFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">物終傷 %</label>
+                        <input type="number" id="physFinal" value="10" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">全技能終傷 %</label>
+                        <input type="number" id="allSkillFinal" value="5" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">遠終傷 %</label>
+                        <input type="number" id="rangedFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">爆終傷 %</label>
+                        <input type="number" id="critFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">屬性終傷 %</label>
+                        <input type="number" id="elementFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">種族終傷 %</label>
+                        <input type="number" id="raceFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">階級終傷 %</label>
+                        <input type="number" id="classFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-400 mb-1">體型終傷 %</label>
+                        <input type="number" id="sizeFinal" value="0" oninput="calculate()" class="w-full bg-slate-950 border border-slate-800 rounded-lg px-3 py-1.5 text-slate-100 text-sm focus:border-indigo-500 focus:outline-none">
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+        <!-- Output Results Sidebar (Right Column 4-Cols) -->
+        <div class="lg:col-span-4 space-y-4">
+            <div class="bg-slate-900 border border-slate-800 rounded-2xl p-5 shadow-2xl sticky top-20">
+                <div class="flex items-center justify-between mb-4 pb-3 border-b border-slate-800">
+                    <h2 class="font-bold text-lg text-slate-100 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-indigo-400"></i> 計算結果推算
+                    </h2>
+                    <span class="text-xs bg-indigo-500/20 text-indigo-300 border border-indigo-500/30 px-2 py-0.5 rounded-full font-medium">即時運算</span>
+                </div>
+
+                <!-- Final Damage Banner -->
+                <div class="bg-gradient-to-br from-amber-500/20 via-indigo-900/40 to-slate-900 border border-amber-500/40 rounded-xl p-4 mb-5 text-center shadow-inner">
+                    <div class="text-xs text-amber-300/80 font-semibold tracking-wider uppercase mb-1">預估最終傷害 (Final Damage)</div>
+                    <div id="resFinalDamage" class="text-3xl font-extrabold text-amber-400 tracking-tight drop-shadow-md">
+                        0
+                    </div>
+                </div>
+
+                <!-- Step by Step Breakdowns -->
+                <div class="space-y-3 text-sm">
+                    <div class="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl flex justify-between items-center">
+                        <span class="text-slate-400 text-xs">1. 前段總 ATK</span>
+                        <span id="resFrontAtk" class="font-semibold text-slate-200">0</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl flex justify-between items-center">
+                        <span class="text-slate-400 text-xs">2. 武器總 ATK</span>
+                        <span id="resWeaponAtk" class="font-semibold text-slate-200">0</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl flex justify-between items-center">
+                        <span class="text-slate-400 text-xs">3. 後段總 ATK</span>
+                        <span id="resBackAtk" class="font-semibold text-slate-200">0</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl flex justify-between items-center">
+                        <span class="text-slate-400 text-xs">4. 全段總 ATK</span>
+                        <span id="resTotalAtk" class="font-semibold text-indigo-300">0</span>
+                    </div>
+
+                    <div class="p-3 bg-slate-950/60 border border-slate-800/80 rounded-xl flex justify-between items-center">
+                        <span class="text-slate-400 text-xs">5. 基礎技能傷害</span>
+                        <span id="resSkillDamage" class="font-semibold text-slate-200">0</span>
+                    </div>
+                </div>
+
+                <!-- Equation Formulas Accordion Info -->
+                <div class="mt-5 pt-4 border-t border-slate-800 text-xs text-slate-400 space-y-1">
+                    <p class="font-medium text-slate-300 mb-1"><i class="fa-solid fa-circle-info text-indigo-400"></i> 計算公式依據：</p>
+                    <p class="truncate">・前段ATK = (1+Lv/4+STR+DEX/5+LUK/3+POW*5)*2</p>
+                    <p class="truncate">・武器ATK = 基礎*(1+STR/200+0.25)+精煉</p>
+                    <p class="truncate">・後段ATK = (武器+卡裝)*連乘增傷</p>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- GitHub Deploy Modal -->
+    <div id="githubModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm hidden items-center justify-center p-4 z-50">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl max-w-2xl w-full p-6 shadow-2xl space-y-4 max-h-[90vh] overflow-y-auto">
+            <div class="flex justify-between items-center border-b border-slate-800 pb-3">
+                <h3 class="text-lg font-bold text-slate-100 flex items-center gap-2">
+                    <i class="fa-brands fa-github text-emerald-400"></i> 免費上傳 GitHub Pages 步驟教學
+                </h3>
+                <button onclick="closeGithubModal()" class="text-slate-400 hover:text-white p-1">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <div class="space-y-4 text-sm text-slate-300 leading-relaxed">
+                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                    <span class="font-semibold text-emerald-400">步驟 1：下載/複製此 HTML 檔案</span>
+                    <p class="text-xs text-slate-400">將這整段程式碼儲存為電腦中的 <code class="bg-slate-800 text-amber-300 px-1 py-0.5 rounded">index.html</code> 檔案。</p>
+                </div>
+
+                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                    <span class="font-semibold text-emerald-400">步驟 2：建立 GitHub 儲存庫 (Repository)</span>
+                    <ol class="list-disc list-inside text-xs text-slate-400 space-y-1">
+                        <li>登入 GitHub 並點擊右上角的 <strong class="text-slate-200">+</strong> -> <strong>New repository</strong>。</li>
+                        <li>輸入名稱（如：<code class="bg-slate-800 text-amber-300 px-1 py-0.5 rounded">ro-calculator</code>）。</li>
+                        <li>選擇 <strong>Public</strong>（公開），然後點擊 <strong>Create repository</strong>。</li>
+                    </ol>
+                </div>
+
+                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                    <span class="font-semibold text-emerald-400">步驟 3：上傳檔案</span>
+                    <p class="text-xs text-slate-400">在建立好的儲存庫頁面中，點擊 <strong class="text-slate-200">uploading an existing file</strong>，將剛剛的 <code class="bg-slate-800 text-amber-300 px-1 py-0.5 rounded">index.html</code> 拖曳上傳，並點擊 <strong class="text-slate-200">Commit changes</strong>。</p>
+                </div>
+
+                <div class="p-3 bg-slate-950 border border-slate-800 rounded-xl space-y-1">
+                    <span class="font-semibold text-emerald-400">步驟 4：啟用 GitHub Pages 免費網站</span>
+                    <ol class="list-disc list-inside text-xs text-slate-400 space-y-1">
+                        <li>進入該儲存庫的 <strong class="text-slate-200">Settings</strong> 頁籤。</li>
+                        <li>左側選單點擊 <strong class="text-slate-200">Pages</strong>。</li>
+                        <li>在 <strong class="text-slate-200">Branch</strong> 下拉選單選擇 <strong class="text-slate-200">main</strong> (或 master)，資料夾選 <strong class="text-slate-200">/(root)</strong>。</li>
+                        <li>點擊 <strong class="text-slate-200">Save</strong>。</li>
+                    </ol>
+                </div>
+
+                <div class="p-3 bg-indigo-950/40 border border-indigo-800/50 rounded-xl text-xs text-indigo-300">
+                    <i class="fa-solid fa-circle-check"></i> 約等待 1~2 分鐘後，您即可透過 <code class="text-amber-300">https://yourname.github.io/ro-calculator/</code> 開啟您的專屬計算器網站！
+                </div>
+            </div>
+
+            <div class="text-right pt-2 border-t border-slate-800">
+                <button onclick="closeGithubModal()" class="px-4 py-2 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded-lg text-sm font-medium transition">
+                    我知道了
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- JavaScript Logic -->
+    <script>
+        // 取得所有數值輸入
+        function getVal(id) {
+            const el = document.getElementById(id);
+            return el ? parseFloat(el.value) || 0 : 0;
+        }
+
+        // 設定欄位數值
+        function setVal(id, val) {
+            const el = document.getElementById(id);
+            if (el) el.value = val;
+        }
+
+        // 核心計算函數
+        function calculate() {
+            // 1. 基礎屬性
+            const baseLv = getVal('baseLv');
+            const str = getVal('str');
+            const dex = getVal('dex');
+            const luk = getVal('luk');
+            const pow = getVal('pow');
+            const patk = getVal('patk');
+
+            // 2. 武器與卡裝
+            const weaponBaseAtk = getVal('weaponBaseAtk');
+            const refineAtk = getVal('refineAtk');
+            const equipAtk = getVal('equipAtk');
+
+            // 3. 後段增傷乘數
+            const elementMod = getVal('elementMod') / 100;
+            const raceMod = getVal('raceMod') / 100;
+            const classMod = getVal('classMod') / 100;
+            const sizeMod = getVal('sizeMod') / 100;
+            const elementAtkMod = getVal('elementAtkMod') / 100;
+            const edpMod = getVal('edpMod') / 100;
+            const atkPercent = getVal('atkPercent') / 100;
+            const patkInc = getVal('patkInc') / 100;
+            const rangedMod = getVal('rangedMod') / 100;
+            const critMod = getVal('critMod') / 100;
+
+            // 4. 技能與 CRATE
+            const skillRatio = getVal('skillRatio') / 100;
+            const specSkillMod = getVal('specSkillMod') / 100;
+            const allSkillMod = getVal('allSkillMod') / 100;
+            const skillBalance = getVal('skillBalance') / 100;
+            const physRangeMod = getVal('physRangeMod') / 100;
+            const crate = getVal('crate');
+            const crateInc = getVal('crateInc') / 100;
+
+            // 5. 最終傷害獨立乘數
+            const backstabFinal = getVal('backstabFinal') / 100;
+            const physFinal = getVal('physFinal') / 100;
+            const allSkillFinal = getVal('allSkillFinal') / 100;
+            const rangedFinal = getVal('rangedFinal') / 100;
+            const critFinal = getVal('critFinal') / 100;
+            const elementFinal = getVal('elementFinal') / 100;
+            const raceFinal = getVal('raceFinal') / 100;
+            const classFinal = getVal('classFinal') / 100;
+            const sizeFinal = getVal('sizeFinal') / 100;
+
+            // -------------------------------------------------------------
+            // 公式計算 (公式依據規格實作)
+            // -------------------------------------------------------------
+
+            // 1. 前段總ATK = (1 + Base Lv/4 + STR + DEX/5 + LUK/3 + POW * 5) * 2
+            const frontAtk = (1 + (baseLv / 4) + str + (dex / 5) + (luk / 3) + (pow * 5)) * 2;
+
+            // 2. 武器總ATK = 武器基礎ATK * (1 + STR/200 + 5 * 0.05) + 精煉ATK
+            // 註: (1 + STR/200 + 0.25)
+            const weaponAtk = weaponBaseAtk * (1 + (str / 200) + (5 * 0.05)) + refineAtk;
+
+            // 3. 後段總ATK = (武器總ATK + 卡裝ATK) * ((1 + 對屬性%) * (1 + 對種族%) * (1 + 對階級%) * (1 + 對體型%) * (1 + 屬性攻擊增傷%) * (1 + 致命塗毒%) + ATK%)
+            const backAtkMultipliers = (1 + elementMod) * (1 + raceMod) * (1 + classMod) * (1 + sizeMod) * (1 + elementAtkMod) * (1 + edpMod) + atkPercent;
+            const backAtk = (weaponAtk + equipAtk) * backAtkMultipliers;
+
+            // 4. 全段總ATK = (前段總ATK + 後段總ATK) * (1 + PATK * (1 + PATK增加%) / 100) * (1 + 遠傷%) * (1 + 爆傷%)
+            const totalAtk = (frontAtk + backAtk) * (1 + (patk * (1 + patkInc)) / 100) * (1 + rangedMod) * (1 + critMod);
+
+            // 5. 技能傷害 = 全段總ATK * (技能倍率%) * (1 + 特定技能增傷% + 全技能增傷%) * (1 + 技能平衡%) * (1 + 物理範圍增傷%) * (1 + 0.40 + CRATE * (1 + CRATE增加%) / 100)
+            const crateFactor = 1 + 0.40 + (crate * (1 + crateInc)) / 100;
+            const skillDamage = totalAtk * skillRatio * (1 + specSkillMod + allSkillMod) * (1 + skillBalance) * (1 + physRangeMod) * crateFactor;
+
+            // 6. 最終傷害 = 技能傷害 * (1 + 背刺終傷%) * (1 + 物終傷%) * (1 + 全技能終傷%) * (1 + 遠終傷%) * (1 + 爆終傷%) * (1 + 屬性終傷%) * (1 + 種族終傷%) * (1 + 階級終傷%) * (1 + 體型終傷%)
+            const finalDamage = skillDamage * 
+                (1 + backstabFinal) * 
+                (1 + physFinal) * 
+                (1 + allSkillFinal) * 
+                (1 + rangedFinal) * 
+                (1 + critFinal) * 
+                (1 + elementFinal) * 
+                (1 + raceFinal) * 
+                (1 + classFinal) * 
+                (1 + sizeFinal);
+
+            // -------------------------------------------------------------
+            // UI 更新顯示
+            // -------------------------------------------------------------
+            document.getElementById('resFrontAtk').innerText = Math.round(frontAtk).toLocaleString();
+            document.getElementById('resWeaponAtk').innerText = Math.round(weaponAtk).toLocaleString();
+            document.getElementById('resBackAtk').innerText = Math.round(backAtk).toLocaleString();
+            document.getElementById('resTotalAtk').innerText = Math.round(totalAtk).toLocaleString();
+            document.getElementById('resSkillDamage').innerText = Math.round(skillDamage).toLocaleString();
+            document.getElementById('resFinalDamage').innerText = Math.round(finalDamage).toLocaleString();
+        }
+
+        // 取得所有輸入ID列表
+        function getAllInputIds() {
+            return [
+                'baseLv', 'str', 'dex', 'luk', 'pow', 'patk',
+                'weaponBaseAtk', 'refineAtk', 'equipAtk',
+                'elementMod', 'raceMod', 'classMod', 'sizeMod', 'elementAtkMod', 'edpMod', 'atkPercent', 'patkInc', 'rangedMod', 'critMod',
+                'skillRatio', 'specSkillMod', 'allSkillMod', 'skillBalance', 'physRangeMod', 'crate', 'crateInc',
+                'backstabFinal', 'physFinal', 'allSkillFinal', 'rangedFinal', 'critFinal', 'elementFinal', 'raceFinal', 'classFinal', 'sizeFinal'
+            ];
+        }
+
+        // 收集所有欄位成為物件
+        function exportCurrentData() {
+            const data = {};
+            getAllInputIds().forEach(id => {
+                data[id] = getVal(id);
+            });
+            return data;
+        }
+
+        // 將物件載入至欄位
+        function loadDataIntoFields(data) {
+            if (!data) return;
+            getAllInputIds().forEach(id => {
+                if (data[id] !== undefined) {
+                    setVal(id, data[id]);
+                }
+            });
+            calculate();
+        }
+
+        // 儲存預設組態至 LocalStorage
+        function savePreset() {
+            const name = prompt('請輸入此配裝/技能預設名稱：', '配裝方案 ' + (getPresets().length + 1));
+            if (!name) return;
+
+            const presets = getPresets();
+            const newData = {
+                id: Date.now(),
+                name: name,
+                data: exportCurrentData()
+            };
+            presets.push(newData);
+            localStorage.setItem('ro_calc_presets', JSON.stringify(presets));
+            renderPresetsSelect();
+            alert('預設組態已儲存！');
+        }
+
+        function getPresets() {
+            try {
+                return JSON.parse(localStorage.getItem('ro_calc_presets')) || [];
+            } catch (e) {
+                return [];
+            }
+        }
+
+        function renderPresetsSelect() {
+            const select = document.getElementById('presetSelect');
+            const presets = getPresets();
+            select.innerHTML = '<option value="">-- 載入已存組態 --</option>';
+            presets.forEach(p => {
+                const opt = document.createElement('option');
+                opt.value = p.id;
+                opt.innerText = p.name;
+                select.appendChild(opt);
+            });
+        }
+
+        function loadPreset(id) {
+            if (!id) return;
+            const presets = getPresets();
+            const target = presets.find(p => p.id == id);
+            if (target && target.data) {
+                loadDataIntoFields(target.data);
+            }
+        }
+
+        // 匯出 JSON 檔
+        function exportJSON() {
+            const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(exportCurrentData(), null, 2));
+            const dlAnchorElem = document.createElement('a');
+            dlAnchorElem.setAttribute("href", dataStr);
+            dlAnchorElem.setAttribute("download", `ro_atk_config_${Date.now()}.json`);
+            dlAnchorElem.click();
+        }
+
+        // 匯入 JSON 檔
+        function importJSON() {
+            const input = document.createElement('input');
+            input.type = 'file';
+            input.accept = 'application/json';
+            input.onchange = e => {
+                const file = e.target.files[0];
+                if (!file) return;
+                const reader = new FileReader();
+                reader.onload = event => {
+                    try {
+                        const parsed = JSON.parse(event.target.result);
+                        loadDataIntoFields(parsed);
+                        alert('JSON 配裝成功載入！');
+                    } catch (err) {
+                        alert('無效的 JSON 檔案格式！');
+                    }
+                };
+                reader.readAsText(file);
+            }
+            input.click();
+        }
+
+        // 重置所有欄位
+        function resetFields() {
+            if (confirm('確定要重置所有欄位數值嗎？')) {
+                const defaults = {
+                    baseLv: 200, str: 120, dex: 100, luk: 90, pow: 100, patk: 30,
+                    weaponBaseAtk: 250, refineAtk: 120, equipAtk: 300,
+                    elementMod: 0, raceMod: 0, classMod: 0, sizeMod: 0, elementAtkMod: 0, edpMod: 0, atkPercent: 0, patkInc: 0, rangedMod: 0, critMod: 0,
+                    skillRatio: 1000, specSkillMod: 0, allSkillMod: 0, skillBalance: 0, physRangeMod: 0, crate: 0, crateInc: 0,
+                    backstabFinal: 0, physFinal: 0, allSkillFinal: 0, rangedFinal: 0, critFinal: 0, elementFinal: 0, raceFinal: 0, classFinal: 0, sizeFinal: 0
+                };
+                loadDataIntoFields(defaults);
+            }
+        }
+
+        // GitHub Modal 操控
+        function openGithubModal() {
+            document.getElementById('githubModal').classList.remove('hidden');
+            document.getElementById('githubModal').classList.add('flex');
+        }
+
+        function closeGithubModal() {
+            document.getElementById('githubModal').classList.add('hidden');
+            document.getElementById('githubModal').classList.remove('flex');
+        }
+
+        // 初始化
+        window.onload = function() {
+            renderPresetsSelect();
+            calculate();
+        };
+    </script>
+</body>
+</html>
